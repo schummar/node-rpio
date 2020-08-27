@@ -1,43 +1,85 @@
 #include <nan.h>
 #include <node.h>
 #include <unistd.h>
+#include <uv.h>
+#include <poll.h>
+#include "bcm2835.h"
 #include "watch.h"
 
 using namespace v8;
+using namespace Nan;
 using std::string;
 
-class Work : public Nan::AsyncWorker
+typedef struct
 {
-public:
-    Work(Nan::Callback *callback) : AsyncWorker(callback){};
-    ~Work(){};
-    void Execute();
-    void Destory(){};
+    Callback *callback;
+    bool direction;
+} watcher;
 
-private:
-    string data = "";
+pthread_mutex_t mutex;
+watcher watchers[40];
+bool poll_thread_running = false;
+int pipe_fds[2];
 
-protected:
-    void HandleOKCallback();
-    void HandleErrorCallback(){};
-};
-
-void Work::Execute()
+void *poll_thread(void *vargp)
 {
-    this->data = "done";
-    sleep(3);
+    bool isInit = false;
+    pollfd descriptors[40];
+    nfds_t nfds;
+
+    for (;;)
+    {
+        if (!isInit)
+        {
+            pthread_mutex_lock(&mutex);
+            for (int i = 0; i < 40; i++)
+            {
+                if (watchers[i].callback)
+                {
+                    descriptors[i].fd = open(i);
+                }
+                else
+                {
+                    if (descriptors[i].fd)
+                    {
+                        close(descriptors[i].fd);
+                    }
+                    descriptors[i].fd = NULL;
+                }
+            }
+            pthread_mutex_unlock(&mutex);
+
+            poll(descriptors, &nfds);
+        }
+    }
 }
 
-void Work::HandleOKCallback()
+void watch(uint32_t pin, Callback *callback)
 {
-    Nan::HandleScope scope;
-    Local<Value> argv[] = {Nan::New<String>(this->data).ToLocalChecked()};
-    this->callback->Call(1, argv);
+    pthread_mutex_lock(&mutex);
+
+    watchers[pin].callback = callback;
+
+    if (!poll_thread_running)
+    {
+        poll_thread_running = true;
+        pipe(pipe_fds);
+        pthread_t thread;
+        pthread_create(&thread, NULL, poll_thread, NULL);
+    }
+    else
+    {
+        char msg = 1;
+        write(pipe_fds[0], &msg, 1);
+    }
+
+    pthread_mutex_unlock(&mutex);
 }
 
-void watch(uint32_t pin, Nan::Callback *callback)
+void unwatch(uint32_t pin)
 {
-    Nan::AsyncQueueWorker(new Work(callback));
+    pthread_mutex_lock(&mutex);
+    delete watchers[pin].callback;
+    watchers[pin].callback = NULL;
+    pthread_mutex_unlock(&mutex);
 }
-
-void unwatch(uint32_t pin) {}
