@@ -27,6 +27,7 @@
 
 #include <unistd.h>	/* usleep() */
 #include "bcm2835.h"
+#include "watch.h"
 
 #define RPIO_EVENT_LOW	0x1
 #define RPIO_EVENT_HIGH	0x2
@@ -65,6 +66,7 @@
 	} while (0)
 
 using namespace Nan;
+using namespace v8;
 
 /*
  * GPIO function select.
@@ -442,6 +444,20 @@ NAN_METHOD(rpio_usleep)
 	uint32_t microseconds = FROM_U32(0);
 
 	usleep(microseconds);
+}
+
+NAN_METHOD(rpio_watch)
+{
+	uint32_t pin = FROM_U32(0);
+	Local<v8::Function> jsCallback = Local<Function>::Cast(info[1]);
+	Nan::Callback* callback = new Nan::Callback(jsCallback);
+	watch(pin, callback);
+}
+
+NAN_METHOD(rpio_unwatch)
+{
+	uint32_t pin = FROM_U32(0);
+	unwatch(pin);
 }
 
 NAN_MODULE_INIT(setup)
