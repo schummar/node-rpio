@@ -454,6 +454,8 @@ NAN_METHOD(rpio_watch)
 	uint32_t pin = FROM_U32(0);
 	Local<Function> jsCallback = Local<Function>::Cast(info[1]);
 	uint32_t direction = FROM_U32(2);
+
+	bcm2835_gpio_ren(pin);
 	watch(pin, new Callback(jsCallback), direction);
 }
 
