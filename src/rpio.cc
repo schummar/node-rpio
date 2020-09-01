@@ -500,6 +500,7 @@ NAN_MODULE_INIT(setup)
 	NAN_EXPORT(target, spi_transfer);
 	NAN_EXPORT(target, spi_write);
 	NAN_EXPORT(target, spi_end);
+	NAN_EXPORT(target, rpio_watch);
 }
 
 #else /* __linux__ */
