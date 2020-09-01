@@ -25,44 +25,48 @@
  */
 #if defined(__linux__)
 
-#include <unistd.h>	/* usleep() */
+#include <unistd.h> /* usleep() */
 #include "bcm2835.h"
 #include "watch.h"
 
-#define RPIO_EVENT_LOW	0x1
-#define RPIO_EVENT_HIGH	0x2
+#define RPIO_EVENT_LOW 0x1
+#define RPIO_EVENT_HIGH 0x2
 
 /* Avoid writing these monstrosities everywhere */
-#define IS_OBJ(i)	info[i]->IsObject()
-#define IS_U32(i)	info[i]->IsUint32()
+#define IS_OBJ(i) info[i]->IsObject()
+#define IS_U32(i) info[i]->IsUint32()
 #define FROM_OBJ(i) \
 	node::Buffer::Data(Nan::To<v8::Object>(info[i]).ToLocalChecked())
-#define FROM_U32(i)	Nan::To<uint32_t>(info[i]).FromJust()
-#define NAN_ARGC	info.Length()
-#define NAN_RETURN	info.GetReturnValue().Set
+#define FROM_U32(i) Nan::To<uint32_t>(info[i]).FromJust()
+#define NAN_ARGC info.Length()
+#define NAN_RETURN info.GetReturnValue().Set
 
-#define ASSERT_ARGC1(t0)						\
-	do {								\
-		if (NAN_ARGC != 1 || !t0(0))				\
-			return ThrowTypeError("Incorrect arguments");	\
+#define ASSERT_ARGC1(t0)                                  \
+	do                                                    \
+	{                                                     \
+		if (NAN_ARGC != 1 || !t0(0))                      \
+			return ThrowTypeError("Incorrect arguments"); \
 	} while (0)
 
-#define ASSERT_ARGC2(t0, t1)						\
-	do {								\
-		if (NAN_ARGC != 2 || !t0(0) || !t1(1))			\
-			return ThrowTypeError("Incorrect arguments");	\
+#define ASSERT_ARGC2(t0, t1)                              \
+	do                                                    \
+	{                                                     \
+		if (NAN_ARGC != 2 || !t0(0) || !t1(1))            \
+			return ThrowTypeError("Incorrect arguments"); \
 	} while (0)
 
-#define ASSERT_ARGC3(t0, t1, t2)					\
-	do {								\
-		if (NAN_ARGC != 3 || !t0(0) || !t1(1) || !t2(2))	\
-			return ThrowTypeError("Incorrect arguments");	\
+#define ASSERT_ARGC3(t0, t1, t2)                          \
+	do                                                    \
+	{                                                     \
+		if (NAN_ARGC != 3 || !t0(0) || !t1(1) || !t2(2))  \
+			return ThrowTypeError("Incorrect arguments"); \
 	} while (0)
 
-#define ASSERT_ARGC4(t0, t1, t2, t3)					\
-	do {								\
+#define ASSERT_ARGC4(t0, t1, t2, t3)                               \
+	do                                                             \
+	{                                                              \
 		if (NAN_ARGC != 4 || !t0(0) || !t1(1) || !t2(2) || !t3(3)) \
-			return ThrowTypeError("Incorrect arguments");	\
+			return ThrowTypeError("Incorrect arguments");          \
 	} while (0)
 
 using namespace Nan;
@@ -251,7 +255,6 @@ NAN_METHOD(i2c_end)
 {
 	bcm2835_i2c_end();
 }
-
 
 /*
  * i2c read/write.  The underlying bcm2835_i2c_read/bcm2835_i2c_write functions
@@ -449,9 +452,9 @@ NAN_METHOD(rpio_usleep)
 NAN_METHOD(rpio_watch)
 {
 	uint32_t pin = FROM_U32(0);
-	Local<v8::Function> jsCallback = Local<Function>::Cast(info[1]);
-	Nan::Callback* callback = new Nan::Callback(jsCallback);
-	watch(pin, callback);
+	Local<Function> jsCallback = Local<Function>::Cast(info[1]);
+	uint32_t direction = FROM_U32(2);
+	watch(pin, new Callback(jsCallback), direction);
 }
 
 NAN_METHOD(rpio_unwatch)

@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "**/azure_devOpsTemplates/**/*.yml": "azure-pipelines",
+        "*.tcc": "cpp"
+    }
+}
