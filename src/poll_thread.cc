@@ -4,6 +4,12 @@
 
 using namespace Nan;
 
+void forwardCallback(uv_async_t *handle)
+{
+    Callback *callback = (Callback *)handle->data;
+    callback->Call(0, NULL);
+}
+
 class Worker
 {
 public:
@@ -11,10 +17,8 @@ public:
 
     void *start()
     {
-        auto callback = this->callback;
-        uv_async_init(uv_default_loop(), &this->async, [callback](uv_async_t *handle) {
-            callback->Call(0, NULL);
-        });
+        uv_async_init(uv_default_loop(), &this->async, forwardCallback);
+        this->async.data = this->callback;
         std::thread(Worker::run, this);
     }
 
