@@ -47,7 +47,7 @@ void *poll_thread(void *vargp)
                 {
                     printf("0\n");
                     char fileName[80];
-                    sprintf(fileName, "/sys/class/gpio/gpio%s/value", i);
+                    sprintf(fileName, "/sys/class/gpio/gpio%d/value", i);
                     printf("1\n");
                     descriptors[i].fd = open(fileName, O_RDONLY);
                     printf("2\n");
