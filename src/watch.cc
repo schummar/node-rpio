@@ -48,7 +48,7 @@ void *poll_thread(void *vargp)
                     char fileName[80];
                     sprintf(fileName, "/sys/class/gpio/gpio%d/value", i);
                     descriptors[i].fd = open(fileName, O_RDONLY);
-                    descriptors[i].events = POLLPRI;
+                    descriptors[i].events = POLLIN;
                     printf("added %s\n", fileName);
                 }
                 else if (!configs[i].callback && descriptors[i].fd)
@@ -69,7 +69,7 @@ void *poll_thread(void *vargp)
 
         for (int i = 0; i < MAX_GPIO; i++)
         {
-            if (descriptors[i].revents & POLLPRI)
+            if (descriptors[i].revents & POLLIN)
             {
                 printf("event %s\n", i);
                 write(pipe_up[0], &i, sizeof(i));
