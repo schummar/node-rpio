@@ -23,7 +23,7 @@ config configs[MAX_GPIO];
 pthread_t thread;
 int pipe_down[2];
 int pipe_up[2];
-uv_async_t handle;
+uv_async_t uv_async;
 
 void *poll_thread(void *vargp)
 {
@@ -49,7 +49,14 @@ void *poll_thread(void *vargp)
                     sprintf(fileName, "/sys/class/gpio/gpio%d/value", i);
                     descriptors[i].fd = open(fileName, O_RDONLY);
                     descriptors[i].events = POLLIN | POLLPRI | POLLERR;
-                    printf("added %s\n", fileName);
+                    if (descriptors[i].fd == -1)
+                    {
+                        printf("Error when opening %s: %s", fileName, strerror(errno));
+                    }
+                    else
+                    {
+                        printf("Opened %s\n", fileName);
+                    }
                 }
                 else if (!configs[i].callback && descriptors[i].fd)
                 {
@@ -71,23 +78,23 @@ void *poll_thread(void *vargp)
         {
             if (descriptors[i].revents & (POLLIN | POLLPRI | POLLERR))
             {
-                printf("event %s\n", i);
+                printf("event %d (%d)\n", i, descriptors[i].revents);
                 write(pipe_up[1], &i, sizeof(i));
-                uv_async_send(&handle);
+                uv_async_send(&uv_async);
             }
         }
         printf("poll after\n");
 
         if (descriptors[MAX_GPIO].revents & (POLLIN | POLLPRI | POLLERR))
         {
-            printf("need update\n");
+            printf("need update (%d)\n", descriptors[MAX_GPIO].revents);
             needsUpdate = true;
         }
         printf("done\n");
     }
 }
 
-void handleCallback(uv_async_t *handle)
+void handleCallback(uv_async_t *uv_async)
 {
     uint32_t pin;
     while (read(pipe_up[0], &pin, sizeof(pin)))
@@ -115,7 +122,7 @@ void watch(uint32_t gpio, Callback *callback, uint32_t direction)
 
         pipe(pipe_down);
         pipe(pipe_up);
-        uv_async_init(uv_default_loop(), &handle, handleCallback);
+        uv_async_init(uv_default_loop(), &uv_async, handleCallback);
         pthread_create(&thread, NULL, poll_thread, NULL);
     }
     else
