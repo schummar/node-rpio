@@ -50,7 +50,7 @@ private:
             pthread_mutex_unlock(&this->mutex);
 
             if (isStopped)
-                return;
+                return NULL;
 
             usleep(this->delay);
         }
