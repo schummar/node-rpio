@@ -27,6 +27,7 @@
 
 #include <unistd.h>	/* usleep() */
 #include "bcm2835.h"
+#include "poll_thread.h"
 
 #define RPIO_EVENT_LOW	0x1
 #define RPIO_EVENT_HIGH	0x2
@@ -442,6 +443,18 @@ NAN_METHOD(rpio_usleep)
 	uint32_t microseconds = FROM_U32(0);
 
 	usleep(microseconds);
+}
+
+NAN_METHOD(rpio_poll_start)
+{
+	v8::Local<v8::Function> jsCallback = v8::Local<v8::Function>::Cast(info[0]);
+	uint32_t delay = FROM_U32(1);
+	poll_start(new Callback(jsCallback), delay);
+}
+
+NAN_METHOD(rpio_poll_stop)
+{
+	poll_stop();
 }
 
 NAN_MODULE_INIT(setup)
