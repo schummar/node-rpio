@@ -27,6 +27,7 @@ uv_async_t handle;
 
 void *poll_thread(void *vargp)
 {
+    printf("poll_thread start\n");
     bool needsUpdate = true;
     pollfd descriptors[MAX_GPIO + 1];
     descriptors[MAX_GPIO].fd = pipe_down[1];
@@ -34,6 +35,8 @@ void *poll_thread(void *vargp)
 
     for (;;)
     {
+        printf("poll_thread loop start\n");
+
         if (needsUpdate)
         {
             pthread_mutex_lock(&mutex);
@@ -59,7 +62,9 @@ void *poll_thread(void *vargp)
             pthread_mutex_unlock(&mutex);
         }
 
+        printf("poll start\n");
         poll(descriptors, MAX_GPIO + 1, -1);
+        printf("poll end\n");
 
         for (int i = 0; i < MAX_GPIO; i++)
         {
@@ -67,13 +72,17 @@ void *poll_thread(void *vargp)
             {
                 printf("event %s\n", i);
                 write(pipe_up[0], &i, sizeof(i));
+                uv_async_send(&handle);
             }
         }
+        printf("poll after\n");
+
         if (descriptors[MAX_GPIO].revents & POLLIN)
         {
             printf("need update\n");
             needsUpdate = true;
         }
+        printf("done\n");
     }
 }
 
@@ -92,6 +101,8 @@ void handleCallback(uv_async_t *handle)
 
 void watch(uint32_t gpio, Callback *callback, uint32_t direction)
 {
+    printf("watch start\n");
+
     pthread_mutex_lock(&mutex);
     configs[gpio].callback = callback;
     configs[gpio].direction = direction;
@@ -99,6 +110,8 @@ void watch(uint32_t gpio, Callback *callback, uint32_t direction)
 
     if (!thread)
     {
+        printf("watch start thread\n");
+
         pipe(pipe_down);
         pipe(pipe_up);
         uv_async_init(uv_default_loop(), &handle, handleCallback);
@@ -108,6 +121,7 @@ void watch(uint32_t gpio, Callback *callback, uint32_t direction)
     {
         write(pipe_down[0], "1", 1);
     }
+    printf("watch end\n");
 }
 
 void unwatch(uint32_t pin)
