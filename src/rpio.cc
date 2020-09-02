@@ -494,6 +494,8 @@ NAN_MODULE_INIT(setup)
 	NAN_EXPORT(target, spi_transfer);
 	NAN_EXPORT(target, spi_write);
 	NAN_EXPORT(target, spi_end);
+	NAN_EXPORT(target, rpio_poll_start);
+	NAN_EXPORT(target, rpio_poll_stop);
 }
 
 #else /* __linux__ */
