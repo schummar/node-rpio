@@ -45,14 +45,11 @@ void *poll_thread(void *vargp)
             {
                 if (configs[i].callback && !descriptors[i].fd)
                 {
-                    printf("0\n");
                     char fileName[80];
                     sprintf(fileName, "/sys/class/gpio/gpio%d/value", i);
-                    printf("1\n");
                     descriptors[i].fd = open(fileName, O_RDONLY);
-                    printf("2\n");
                     descriptors[i].events = POLLPRI;
-                    printf("3\n");
+                    printf("added %s\n", fileName);
                 }
                 else if (!configs[i].callback && descriptors[i].fd)
                 {
