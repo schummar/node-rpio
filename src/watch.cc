@@ -31,7 +31,7 @@ void *poll_thread(void *vargp)
     bool needsUpdate = true;
     pollfd descriptors[MAX_GPIO + 1];
     descriptors[MAX_GPIO].fd = pipe_down[0];
-    descriptors[MAX_GPIO].events = POLLIN;
+    descriptors[MAX_GPIO].events = POLLIN | POLLPRI | POLLERR;
 
     for (;;)
     {
@@ -48,7 +48,7 @@ void *poll_thread(void *vargp)
                     char fileName[80];
                     sprintf(fileName, "/sys/class/gpio/gpio%d/value", i);
                     descriptors[i].fd = open(fileName, O_RDONLY);
-                    descriptors[i].events = POLLIN;
+                    descriptors[i].events = POLLIN | POLLPRI | POLLERR;
                     printf("added %s\n", fileName);
                 }
                 else if (!configs[i].callback && descriptors[i].fd)
@@ -69,7 +69,7 @@ void *poll_thread(void *vargp)
 
         for (int i = 0; i < MAX_GPIO; i++)
         {
-            if (descriptors[i].revents & POLLIN)
+            if (descriptors[i].revents & (POLLIN | POLLPRI | POLLERR))
             {
                 printf("event %s\n", i);
                 write(pipe_up[1], &i, sizeof(i));
@@ -78,7 +78,7 @@ void *poll_thread(void *vargp)
         }
         printf("poll after\n");
 
-        if (descriptors[MAX_GPIO].revents & POLLIN)
+        if (descriptors[MAX_GPIO].revents & (POLLIN | POLLPRI | POLLERR))
         {
             printf("need update\n");
             needsUpdate = true;
