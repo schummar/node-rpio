@@ -30,7 +30,7 @@ void *poll_thread(void *vargp)
     printf("poll_thread start\n");
     bool needsUpdate = true;
     pollfd descriptors[MAX_GPIO + 1];
-    descriptors[MAX_GPIO].fd = pipe_down[1];
+    descriptors[MAX_GPIO].fd = pipe_down[0];
     descriptors[MAX_GPIO].events = POLLIN;
 
     for (;;)
@@ -72,7 +72,7 @@ void *poll_thread(void *vargp)
             if (descriptors[i].revents & POLLIN)
             {
                 printf("event %s\n", i);
-                write(pipe_up[0], &i, sizeof(i));
+                write(pipe_up[1], &i, sizeof(i));
                 uv_async_send(&handle);
             }
         }
@@ -90,7 +90,7 @@ void *poll_thread(void *vargp)
 void handleCallback(uv_async_t *handle)
 {
     uint32_t pin;
-    while (read(pipe_up[1], &pin, sizeof(pin)))
+    while (read(pipe_up[0], &pin, sizeof(pin)))
     {
         if (configs[pin].callback)
         {
@@ -120,7 +120,7 @@ void watch(uint32_t gpio, Callback *callback, uint32_t direction)
     }
     else
     {
-        write(pipe_down[0], "1", 1);
+        write(pipe_down[1], "1", 1);
     }
     printf("watch end\n");
 }
