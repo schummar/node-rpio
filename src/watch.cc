@@ -51,7 +51,7 @@ void *poll_thread(void *vargp)
                     descriptors[i].events = POLLIN | POLLPRI | POLLERR;
                     if (descriptors[i].fd == -1)
                     {
-                        printf("Error when opening %s: %s", fileName, strerror(errno));
+                        printf("Error when opening %s: %s\n", fileName, strerror(errno));
                     }
                     else
                     {
