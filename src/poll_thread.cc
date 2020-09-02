@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 using namespace Nan;
+using namespace std;
 
 void forwardCallback(uv_async_t *handle)
 {
@@ -19,7 +20,7 @@ public:
     {
         uv_async_init(uv_default_loop(), &this->async, forwardCallback);
         this->async.data = this->callback;
-        std::thread(Worker::run, this);
+        this->t = new thread(&Worker::run, this);
     }
 
     void stop()
@@ -28,6 +29,7 @@ public:
         this->isStopped = true;
         uv_close((uv_handle_t *)&this->async, NULL);
         delete this->callback;
+        delete this->t;
         pthread_mutex_unlock(&this->mutex);
     }
 
@@ -35,12 +37,12 @@ private:
     Callback *callback;
     useconds_t delay;
 
-    pthread_t thread;
+    thread *t;
     pthread_mutex_t mutex;
     uv_async_t async;
     bool isStopped = false;
 
-    void *run(void *vargp)
+    void *run()
     {
         while (true)
         {
