@@ -3,80 +3,71 @@
 #include <unistd.h>
 
 using namespace Nan;
-using namespace std;
 
-void forwardCallback(uv_async_t *handle)
+typedef struct
 {
-    Callback *callback = (Callback *)handle->data;
-    callback->Call(0, NULL);
-}
-
-class Worker
-{
-public:
-    Worker(Callback *callback, useconds_t delay = 1000) : callback(callback), delay(delay) {}
-
-    void *start()
-    {
-        uv_async_init(uv_default_loop(), &this->async, forwardCallback);
-        this->async.data = this->callback;
-        this->t = new thread(&Worker::run, this);
-    }
-
-    void stop()
-    {
-        pthread_mutex_lock(&this->mutex);
-        this->isStopped = true;
-        uv_close((uv_handle_t *)&this->async, NULL);
-        delete this->callback;
-        delete this->t;
-        pthread_mutex_unlock(&this->mutex);
-    }
-
-private:
     Callback *callback;
     useconds_t delay;
-
-    thread *t;
+    pthread_t thread;
     pthread_mutex_t mutex;
     uv_async_t async;
     bool isStopped = false;
+} data_t;
 
-    void *run()
+data_t *data;
+
+// void forwardCallback(uv_async_t *handle)
+// {
+//     Callback *callback = (Callback *)handle->data;
+//     callback->Call(0, NULL);
+// }
+
+void *run(void *arg)
+{
+    data_t *data = (data_t *)arg;
+
+    while (true)
     {
-        while (true)
-        {
-            pthread_mutex_lock(&this->mutex);
-            bool isStopped = this->isStopped;
-            if (!isStopped)
-            {
-                printf("poll\n");
-                uv_async_send(&this->async);
-            }
-            pthread_mutex_unlock(&this->mutex);
+        pthread_mutex_lock(&data->mutex);
+        bool isStopped = data->isStopped;
+        pthread_mutex_unlock(&data->mutex);
+        if (isStopped)
+            return NULL;
 
-            if (isStopped)
-                return NULL;
-
-            usleep(this->delay);
-        }
+        printf("poll\n");
+        uv_async_send(&data->async);
+        usleep(data->delay);
     }
-};
-
-Worker *worker;
+}
 
 void poll_start(Callback *callback, useconds_t delay)
 {
-    if (worker)
+    if (data)
         poll_stop();
 
-    worker = new Worker(callback, delay);
-    worker->start();
+    data = new data_t();
+    data->callback = callback;
+    data->delay = delay;
+    data->async.data = data;
+
+    uv_async_init(uv_default_loop(), &data->async, [](uv_async_t *handle) {
+        data_t *data = (data_t *)handle->data;
+        data->callback->Call(0, NULL);
+    });
+
+    pthread_create(&data->thread, NULL, run, data);
 }
 
 void poll_stop()
 {
-    worker->stop();
-    delete worker;
-    worker = NULL;
+    pthread_mutex_lock(&data->mutex);
+    data->isStopped = true;
+    pthread_mutex_unlock(&data->mutex);
+    pthread_join(data->thread, NULL);
+
+    delete data->callback;
+    uv_close((uv_handle_t *)&data->async, NULL);
+
+    delete data;
+    data = NULL;
 }
