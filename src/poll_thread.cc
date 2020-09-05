@@ -51,6 +51,7 @@ void poll_start(Callback *callback, useconds_t delay)
     data->async.data = data;
 
     uv_async_init(uv_default_loop(), &data->async, [](uv_async_t *handle) {
+        EscapableHandleScope scope;
         data_t *data = (data_t *)handle->data;
         data->callback->Call(0, NULL);
     });
