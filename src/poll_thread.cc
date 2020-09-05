@@ -34,7 +34,6 @@ void *run(void *arg)
         if (isStopped)
             return NULL;
 
-        printf("poll\n");
         uv_async_send(&data->async);
         usleep(data->delay);
     }
