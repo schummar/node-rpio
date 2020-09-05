@@ -1,6 +1,7 @@
-#include "poll_thread.h"
 #include <thread>
 #include <unistd.h>
+#include "poll_thread.h"
+#include "bcm2835.h"
 
 using namespace Nan;
 
@@ -34,7 +35,11 @@ void *run(void *arg)
         if (isStopped)
             return NULL;
 
-        uv_async_send(&data->async);
+        if (bcm2835_gpio_eds_multi(UINT32_MAX))
+        {
+            printf("poll!\n");
+            uv_async_send(&data->async);
+        }
         usleep(data->delay);
     }
 }
